@@ -1,8 +1,8 @@
 const express = require("express");
 const Stripe = require("stripe");
-const { Order } = require("../models/order");
-
 require("dotenv").config();
+const createOrder = require('../controllers/order')
+const logger = require('../utils/logger')
 
 const stripe = Stripe(process.env.STRIPE_KEY);
 const router = express.Router();
@@ -98,38 +98,6 @@ router.post("/create-checkout-session", async (req, res) => {
   res.send({ url: session.url });
 });
 
-// Create order function
-
-const createOrder = async (customer, data) => {
-  // console.log(customer);
-  const Items = [JSON.parse(customer.metadata.cart)];
-  // console.log(Items);
-
-  const products = Items.map((item) => {
-    return {
-      productId: item.id,
-      quantity: item.quantity,
-    };
-  });
-
-  const newOrder = new Order({
-    userId: customer.id,
-    customerId: data.customer,
-    paymentIntentId: data.payment_intent,
-    products,
-    subtotal: data.amount_subtotal,
-    total: data.amount_total,
-    shipping: data.customer_details,
-    payment_status: data.payment_status,
-  });
-
-  try {
-    const savedOrder = await newOrder.save();
-    console.log("Processed Order:", savedOrder);
-  } catch (err) {
-    console.log(err);
-  }
-};
 
 // Stripe webhoook
 
@@ -157,6 +125,7 @@ router.post(
         );
       } catch (err) {
         console.log(`⚠️  Webhook signature verification failed:  ${err}`);
+        logger.error(err);
         return res.sendStatus(400);
       }
       // Extract the object from the event.
@@ -175,15 +144,19 @@ router.post(
         .retrieve(data.customer)
         .then(async (customer) => {
           try {
-            // CREATE ORDER
-            // console.log(customer);
+
+            // calling createOrder function
             createOrder(customer, data);
           } catch (err) {
-            console.log(typeof createOrder);
+            // console.log(typeof createOrder);
             console.log(err);
+            logger.error(err);
           }
         })
-        .catch((err) => console.log(err.message));
+        .catch((err) => {
+          console.log(err.message);
+          logger.error(err);
+        });
     }
 
     res.status(200).end();

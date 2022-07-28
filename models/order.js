@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+// Schema for storing order
 const orderSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true },
