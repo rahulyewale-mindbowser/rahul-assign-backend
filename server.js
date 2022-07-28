@@ -3,6 +3,7 @@ const app = express();
 const cors =require('cors')
 const stripe = require("./routes/stripe");
 const orders = require("./routes/order")
+const morgan = require('./middlewares/morgan')
 const corsOptions ={
     origin:'*', 
     credentials:true,            //access-control-allow-credentials:true
@@ -14,6 +15,7 @@ const corsOptions ={
   // execute database connection 
   dbConnect();
 
+  app.use(morgan);
 require('dotenv').config()
 const port = process.env.PORT || 8080 ;
 
